@@ -21,10 +21,13 @@ class ToolAdapter(Protocol):
     def invoke(self, input_data: Any) -> Any: ...
 
 class AdapterRegistry:
-    def __init__(self, *, max_payload_bytes: int = 1_048_576) -> None:
+    def __init__(self, *, max_payload_bytes: int = 1_048_576, max_payload_depth: int = 64) -> None:
         if not isinstance(max_payload_bytes, int) or isinstance(max_payload_bytes, bool) or max_payload_bytes < 1:
             raise ValueError("max_payload_bytes must be a positive integer")
+        if not isinstance(max_payload_depth, int) or isinstance(max_payload_depth, bool) or max_payload_depth < 1:
+            raise ValueError("max_payload_depth must be a positive integer")
         self._max_payload_bytes = max_payload_bytes
+        self._max_payload_depth = max_payload_depth
         self._adapters: dict[str, ToolAdapter] = {}
         self._capabilities: dict[str, frozenset[str]] = {}
 
@@ -93,9 +96,9 @@ class AdapterRegistry:
         # Accept only the JSON data model (not Python's tuple or non-string-key
         # coercions), and reject cycles before serialization.
         active: set[int] = set()
-        stack = [(value, False)]
+        stack = [(value, False, 0)]
         while stack:
-            item, exiting = stack.pop()
+            item, exiting, depth = stack.pop()
             if isinstance(item, (dict, list)):
                 marker = id(item)
                 if exiting:
@@ -103,14 +106,16 @@ class AdapterRegistry:
                     continue
                 if marker in active:
                     raise ValueError("cyclic payload is not JSON-compatible")
+                if depth >= self._max_payload_depth:
+                    raise ValueError("payload exceeds maximum nesting depth")
                 active.add(marker)
-                stack.append((item, True))
+                stack.append((item, True, depth))
                 if isinstance(item, dict):
                     if any(not isinstance(key, str) for key in item):
                         raise TypeError("JSON object keys must be strings")
-                    stack.extend((child, False) for child in item.values())
+                    stack.extend((child, False, depth + 1) for child in item.values())
                 else:
-                    stack.extend((child, False) for child in item)
+                    stack.extend((child, False, depth + 1) for child in item)
             elif item is None or isinstance(item, (str, bool, int)):
                 continue
             elif isinstance(item, float):
