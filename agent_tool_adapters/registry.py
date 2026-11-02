@@ -4,8 +4,9 @@ This is an in-process API seam, not a sandbox or authenticated enforcement point
 """
 from __future__ import annotations
 import json
+import math
 from typing import Any, Protocol, runtime_checkable
-from .models import Invocation, InvocationResult
+from .models import Invocation, InvocationResult, PolicyDecision
 
 class AdapterError(Exception):
     """Base exception for expected adapter registry errors."""
@@ -66,21 +67,22 @@ class AdapterRegistry:
         adapter_id, adapter = matches[0]
         try:
             self._check_payload(invocation.input_data)
-        except (TypeError, ValueError, OverflowError):
+        except (TypeError, ValueError, OverflowError, RecursionError):
             return self._denied(adapter_id, invocation.capability, "invalid_or_oversized_input")
         try:
             decision = invocation.policy(invocation)
         except Exception:
             return self._denied(adapter_id, invocation.capability, "policy_error")
-        if decision is None or getattr(decision, "allowed", False) is not True:
+        if not isinstance(decision, PolicyDecision) or decision.allowed is not True:
+            decision_id = decision.decision_id if isinstance(decision, PolicyDecision) else None
             return self._denied(adapter_id, invocation.capability, "policy_denied",
-                                getattr(decision, "decision_id", None))
+                                decision_id)
         try:
             output = adapter.invoke(invocation.input_data)
             self._check_payload(output)
         except (TypeError, ValueError, OverflowError):
             return self._denied(adapter_id, invocation.capability, "invalid_or_oversized_output",
-                                getattr(decision, "decision_id", None))
+                                decision.decision_id)
         except Exception:
             return self._denied(adapter_id, invocation.capability, "adapter_error",
                                 getattr(decision, "decision_id", None))
@@ -88,8 +90,39 @@ class AdapterRegistry:
                                 decision_id=getattr(decision, "decision_id", None))
 
     def _check_payload(self, value: Any) -> None:
-        encoded = json.dumps(value, ensure_ascii=False, allow_nan=False,
-                             separators=(",", ":")).encode("utf-8")
+        # Accept only the JSON data model (not Python's tuple or non-string-key
+        # coercions), and reject cycles before serialization.
+        active: set[int] = set()
+        stack = [(value, False)]
+        while stack:
+            item, exiting = stack.pop()
+            if isinstance(item, (dict, list)):
+                marker = id(item)
+                if exiting:
+                    active.remove(marker)
+                    continue
+                if marker in active:
+                    raise ValueError("cyclic payload is not JSON-compatible")
+                active.add(marker)
+                stack.append((item, True))
+                if isinstance(item, dict):
+                    if any(not isinstance(key, str) for key in item):
+                        raise TypeError("JSON object keys must be strings")
+                    stack.extend((child, False) for child in item.values())
+                else:
+                    stack.extend((child, False) for child in item)
+            elif item is None or isinstance(item, (str, bool, int)):
+                continue
+            elif isinstance(item, float):
+                if not math.isfinite(item):
+                    raise ValueError("non-finite numbers are not valid JSON")
+            else:
+                raise TypeError("payload contains a non-JSON value")
+        try:
+            encoded = json.dumps(value, ensure_ascii=False, allow_nan=False,
+                                 separators=(",", ":")).encode("utf-8")
+        except (TypeError, ValueError, OverflowError, RecursionError) as exc:
+            raise ValueError("payload is not safely serializable as JSON") from exc
         if len(encoded) > self._max_payload_bytes:
             raise ValueError("payload exceeds configured byte limit")
 
