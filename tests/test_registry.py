@@ -51,6 +51,34 @@ class RegistryTests(unittest.TestCase):
         result = self.call({"bad": object()})
         self.assertEqual(result.error_code, "invalid_or_oversized_input")
 
+    def test_non_string_json_object_key_rejected(self):
+        result = self.call({1: "coerced-key"})
+        self.assertEqual(result.error_code, "invalid_or_oversized_input")
+
+    def test_tuple_is_not_treated_as_json_array(self):
+        result = self.call(("not", "a", "json", "array"))
+        self.assertEqual(result.error_code, "invalid_or_oversized_input")
+
+    def test_cyclic_payload_rejected_without_recursion_escape(self):
+        cyclic = []
+        cyclic.append(cyclic)
+        result = self.call(cyclic)
+        self.assertEqual(result.error_code, "invalid_or_oversized_input")
+
+    def test_deeply_nested_payload_is_rejected_cleanly(self):
+        nested = "leaf"
+        for _ in range(1500):
+            nested = [nested]
+        result = self.call(nested)
+        self.assertEqual(result.error_code, "invalid_or_oversized_input")
+
+    def test_non_policy_decision_object_fails_closed(self):
+        class Lookalike:
+            allowed = True
+            decision_id = "not-a-policy-decision"
+        result = self.call({}, lambda _: Lookalike())
+        self.assertEqual(result.error_code, "policy_denied")
+
     def test_non_finite_json_number_rejected(self):
         result = self.call(float("nan"))
         self.assertEqual(result.error_code, "invalid_or_oversized_input")
