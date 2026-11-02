@@ -146,5 +146,52 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(self.registry.descriptors(),
                          [{"adapter_id": "test.echo", "capabilities": ["test.echo"]}])
 
+    def test_malformed_direct_invocation_is_denied(self):
+        result = self.registry.invoke(object())
+        self.assertEqual(result.error_code, "invalid_invocation")
+
+    def test_missing_policy_callback_is_denied_cleanly(self):
+        result = self.registry.invoke(Invocation("test-principal", "test.echo", {}, None))
+        self.assertEqual(result.error_code, "policy_unavailable")
+
+    def test_policy_decision_identifier_is_bounded(self):
+        result = self.call({}, lambda _: PolicyDecision(True, "x" * 129))
+        self.assertEqual(result.error_code, "invalid_policy_decision")
+
+    def test_adapter_identifier_and_capability_bounds(self):
+        class TooLong:
+            adapter_id = "a" * 129
+            capabilities = frozenset({"cap.valid"})
+            def invoke(self, input_data):
+                return input_data
+        with self.assertRaises(AdapterProtocolError):
+            AdapterRegistry().register(TooLong())
+        class TooMany:
+            adapter_id = "adapter.valid"
+            capabilities = frozenset(f"cap.{i}" for i in range(129))
+            def invoke(self, input_data):
+                return input_data
+        with self.assertRaises(AdapterProtocolError):
+            AdapterRegistry().register(TooMany())
+
+    def test_payload_item_budget_is_enforced(self):
+        registry = AdapterRegistry(max_payload_items=3)
+        registry.register(Echo())
+        result = registry.invoke(Invocation("p", "test.echo", [1, 2, 3], self.allow))
+        self.assertEqual(result.error_code, "invalid_or_oversized_input")
+
+    def test_descriptor_matches_normative_schema(self):
+        root = Path(__file__).resolve().parents[1]
+        schema = json.loads((root / "schemas/tool-adapter-descriptor.schema.json").read_text(encoding="utf-8"))
+        validator = Draft202012Validator(schema)
+        for descriptor in self.registry.descriptors():
+            self.assertEqual(list(validator.iter_errors(descriptor)), [])
+
+    def test_payload_item_limit_configuration_is_bounded(self):
+        with self.assertRaises(ValueError):
+            AdapterRegistry(max_payload_items=0)
+        with self.assertRaises(ValueError):
+            AdapterRegistry(max_payload_items=100001)
+
 if __name__ == "__main__":
     unittest.main()
