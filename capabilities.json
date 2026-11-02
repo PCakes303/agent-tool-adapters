@@ -7,7 +7,7 @@
     {
       "id": "tools.adapter-registration",
       "name": "Explicit adapter registration",
-      "status": "experimental",
+      "status": "tested",
       "description": "Registers trusted in-process adapter objects after validating unique IDs and capability declarations.",
       "evidence": [
         "agent_tool_adapters/registry.py",
@@ -17,7 +17,7 @@
     {
       "id": "tools.policy-gated-invocation",
       "name": "Policy-gated tool invocation",
-      "status": "experimental",
+      "status": "tested",
       "description": "Requires an injected policy decision for each invocation and rejects missing or denied decisions.",
       "evidence": [
         "agent_tool_adapters/registry.py",
@@ -27,7 +27,7 @@
     {
       "id": "tools.bounded-json-payloads",
       "name": "Bounded JSON-compatible payloads",
-      "status": "experimental",
+      "status": "tested",
       "description": "Validates JSON-compatible input and output and enforces configurable serialized byte limits.",
       "evidence": [
         "agent_tool_adapters/registry.py",
