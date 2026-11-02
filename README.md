@@ -1,6 +1,6 @@
 # Agent Tool Adapters
 
-**Status:** Experimental reference library staged for repository 24; not yet deployed to its own GitHub repository.
+**Status:** Experimental reference library deployed in `PCakes303/agent-tool-adapters`; 18 unit tests pass on Python 3.10, 3.11 and 3.12.
 
 A small, dependency-free Python contract for exposing existing tools through consistent, permissioned adapter interfaces. The first vertical slice defines adapter registration, capability declarations, policy-gated invocation, bounded input/output handling, and structured results. It does not ship adapters for specific third-party tools.
 
@@ -9,7 +9,7 @@ A small, dependency-free Python contract for exposing existing tools through con
 - Adapters are explicitly registered by a trusted application; no dynamic plugin discovery or code loading.
 - Every invocation supplies a principal, a declared capability, and a policy decision callback. Missing or denying policy fails closed.
 - Adapter identity and declared capabilities are metadata, not proof of identity, safety, or authorization.
-- Inputs and outputs are JSON-compatible values with configurable byte ceilings.
+- Inputs and outputs are strictly validated against the JSON data model (string object keys only, no tuples, non-finite numbers or cycles) with configurable serialized byte ceilings.
 - Calls are synchronous and in-process. Timeouts, process isolation, network authentication, durable audit, and sandbox enforcement belong to upstream/downstream systems.
 
 ## Quick start
@@ -60,4 +60,4 @@ No shell execution, arbitrary code loading, credentials storage, network client,
 python -m unittest discover -s tests -v
 ```
 
-Python 3.10–3.12 CI is configured. Licensing remains pending portfolio-level review; no license is asserted.
+Python 3.10–3.12 CI passes all 18 unit tests. Licensing remains pending portfolio-level review; no license is asserted.
