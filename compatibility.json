@@ -1,0 +1,33 @@
+{
+  "compatibility_version": "1.1.0",
+  "repository": "agent-tool-adapters",
+  "policy": "Declared dependencies do not establish runtime interoperability. A dependency becomes tested only with a reproducible cross-repository fixture and CI evidence.",
+  "dependencies": [
+    {
+      "repository_id": "aix-core",
+      "version_range": "experimental semantic envelope; not pinned",
+      "status": "declared",
+      "evidence": []
+    },
+    {
+      "repository_id": "transport-gateway",
+      "version_range": "experimental transport boundary; not pinned",
+      "status": "declared",
+      "evidence": []
+    },
+    {
+      "repository_id": "policy-engine",
+      "version_range": "experimental policy decision semantics; not pinned",
+      "status": "declared",
+      "evidence": []
+    },
+    {
+      "repository_id": "sandbox-security",
+      "version_range": "planned contract; repository not yet implemented",
+      "status": "planned",
+      "evidence": []
+    }
+  ],
+  "tested_combinations": [],
+  "breaking_change_policy": "Major versions may change required fields or invocation semantics; minor versions add backward-compatible optional fields; patch versions correct editorial or non-semantic defects."
+}

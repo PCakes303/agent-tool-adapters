@@ -1,0 +1,50 @@
+{
+  "capabilities_version": "1.1.0",
+  "repository": "agent-tool-adapters",
+  "repository_id": "tool-adapters",
+  "maturity": "experimental",
+  "capabilities": [
+    {
+      "id": "tools.adapter-registration",
+      "name": "Explicit adapter registration",
+      "status": "experimental",
+      "description": "Registers trusted in-process adapter objects after validating unique IDs and capability declarations.",
+      "evidence": [
+        "agent_tool_adapters/registry.py",
+        "tests/test_registry.py"
+      ]
+    },
+    {
+      "id": "tools.policy-gated-invocation",
+      "name": "Policy-gated tool invocation",
+      "status": "experimental",
+      "description": "Requires an injected policy decision for each invocation and rejects missing or denied decisions.",
+      "evidence": [
+        "agent_tool_adapters/registry.py",
+        "tests/test_registry.py"
+      ]
+    },
+    {
+      "id": "tools.bounded-json-payloads",
+      "name": "Bounded JSON-compatible payloads",
+      "status": "experimental",
+      "description": "Validates JSON-compatible input and output and enforces configurable serialized byte limits.",
+      "evidence": [
+        "agent_tool_adapters/registry.py",
+        "tests/test_registry.py"
+      ]
+    }
+  ],
+  "explicit_non_capabilities": [
+    "third-party tool adapters bundled",
+    "AIX codec or transport gateway integration",
+    "authentication or principal identity verification",
+    "production policy engine integration",
+    "sandbox or process isolation",
+    "timeouts or cancellation of blocking adapters",
+    "network invocation",
+    "secret or credential management",
+    "durable audit or invocation storage",
+    "automatic tool discovery or dynamic code loading"
+  ]
+}

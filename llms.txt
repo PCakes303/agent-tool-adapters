@@ -1,0 +1,10 @@
+# Agent Tool Adapters
+
+Experimental, dependency-free Python reference library for explicit tool adapter registration and policy-gated invocation.
+
+- README.md: scope, quick start, and limitations.
+- docs/ADAPTER-CONTRACT.md: invocation sequence and adapter contract.
+- docs/THREAT-MODEL.md: trust boundaries and non-goals.
+- schemas/tool-adapter-descriptor.schema.json: machine-readable adapter descriptor.
+- Python API: agent_tool_adapters.
+- No third-party adapters, sandbox, authentication, network transport, or production policy integration are included.

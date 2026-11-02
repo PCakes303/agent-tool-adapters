@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "manifest_version": "1.0.0",
+  "id": "tool-adapters",
+  "name": "agent-tool-adapters",
+  "visibility": "public",
+  "maturity": "experimental",
+  "summary": "Experimental, dependency-free Python reference contract for registering existing tools behind explicit capability declarations and policy-gated invocation; no bundled third-party adapters or sandbox runtime.",
+  "license": {
+    "expression": null,
+    "status": "pending-review",
+    "notes": "Repository-specific license decision remains pending legal and third-party dependency review."
+  },
+  "interfaces": [
+    {
+      "name": "tool-adapter-python-api",
+      "version": "0.1.0",
+      "kind": "library",
+      "stability": "experimental"
+    },
+    {
+      "name": "tool-adapter-descriptor",
+      "version": "0.1.0",
+      "kind": "json-schema",
+      "stability": "experimental"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "aix-core",
+      "constraint": "AIX semantic task and capability mapping contract; version not pinned",
+      "kind": "contract"
+    },
+    {
+      "id": "transport-gateway",
+      "constraint": "transport integration boundary; version not pinned",
+      "kind": "contract"
+    },
+    {
+      "id": "policy-engine",
+      "constraint": "authorization decision contract; version not pinned",
+      "kind": "contract"
+    },
+    {
+      "id": "sandbox-security",
+      "constraint": "planned isolation/execution contract; not yet implemented",
+      "kind": "contract"
+    }
+  ],
+  "security": {
+    "threat_model": "docs/THREAT-MODEL.md",
+    "secrets_in_repository": false,
+    "data_classification": "public",
+    "security_contact": null
+  },
+  "default_branch": "main",
+  "compatibility": [],
+  "evidence": [
+    {
+      "claim": "Registration validation, default-deny policy gate, bounded JSON payloads, duplicate registration rejection, and structured adapter failures are covered by unit tests.",
+      "kind": "test",
+      "location": "tests/test_registry.py"
+    }
+  ],
+  "$id": "https://github.com/PCakes303/agent-tool-adapters/blob/main/manifest.json"
+}
