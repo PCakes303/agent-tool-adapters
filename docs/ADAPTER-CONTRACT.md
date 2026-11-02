@@ -9,7 +9,7 @@ An adapter wraps one existing tool behind a stable `adapter_id`, a finite set of
 1. A trusted host constructs an invocation using an authenticated principal context.
 2. The host selects a registered adapter by exact capability identifier.
 3. The registry calls the injected policy callback for that invocation. Missing, exceptional, or denying policy results fail closed.
-4. Input is validated as JSON-compatible and constrained by a serialized UTF-8 byte ceiling.
+4. Input is validated as JSON-compatible and constrained by a serialized UTF-8 byte ceiling and a configurable maximum nesting depth (64 by default).
 5. The adapter is called in-process. Its output is subjected to the same JSON and size constraints.
 6. A structured result reports success or a non-sensitive error code and the policy decision identifier.
 
