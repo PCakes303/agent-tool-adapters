@@ -1,6 +1,6 @@
 # Agent Tool Adapters
 
-**Status:** Experimental reference library deployed in `PCakes303/agent-tool-adapters`; 18 unit tests pass on Python 3.10, 3.11 and 3.12.
+**Status:** Experimental reference library deployed in `PCakes303/agent-tool-adapters`; 20 unit tests pass on Python 3.10, 3.11 and 3.12.
 
 A small, dependency-free Python contract for exposing existing tools through consistent, permissioned adapter interfaces. The first vertical slice defines adapter registration, capability declarations, policy-gated invocation, bounded input/output handling, and structured results. It does not ship adapters for specific third-party tools.
 
@@ -60,4 +60,4 @@ No shell execution, arbitrary code loading, credentials storage, network client,
 python -m unittest discover -s tests -v
 ```
 
-Python 3.10–3.12 CI passes all 18 unit tests. Licensing remains pending portfolio-level review; no license is asserted.
+Python 3.10–3.12 CI passes all 20 unit tests. Licensing remains pending portfolio-level review; no license is asserted.
