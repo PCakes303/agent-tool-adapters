@@ -28,7 +28,7 @@
       "id": "tools.bounded-json-payloads",
       "name": "Bounded JSON-compatible payloads",
       "status": "tested",
-      "description": "Validates JSON-compatible input and output and enforces configurable serialized byte limits.",
+      "description": "Validates JSON-compatible input and output and enforces serialized byte, nesting-depth and total-item limits.",
       "evidence": [
         "agent_tool_adapters/registry.py",
         "tests/test_registry.py"
