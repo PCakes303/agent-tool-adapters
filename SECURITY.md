@@ -6,7 +6,8 @@ This repository is an experimental in-process adapter registry and policy-gating
 - Never expose the registry directly to untrusted callers.
 - Supply a trusted policy decision function and authenticated principal context from the host.
 - Execute untrusted or blocking adapters only behind a separately verified sandbox with resource limits and timeouts.
-- Treat all adapter inputs and outputs as untrusted data.
+- Treat all adapter inputs and outputs as untrusted data; enforce byte-size, nesting-depth and total-item ceilings before and after adapter invocation.
+- Adapter identifiers, capability sets, principal identifiers and policy decision identifiers are length/count bounded. Malformed direct invocation objects fail closed.
 - Do not place credentials, tokens, private data, or secrets in this repository.
 
 ## Vulnerability reporting
