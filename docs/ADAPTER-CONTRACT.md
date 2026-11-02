@@ -9,13 +9,13 @@ An adapter wraps one existing tool behind a stable `adapter_id`, a finite set of
 1. A trusted host constructs an invocation using an authenticated principal context.
 2. The host selects a registered adapter by exact capability identifier.
 3. The registry calls the injected policy callback for that invocation. Missing, exceptional, or denying policy results fail closed.
-4. Input is validated as JSON-compatible and constrained by a serialized UTF-8 byte ceiling and a configurable maximum nesting depth (64 by default).
+4. Input is validated as JSON-compatible and constrained by a serialized UTF-8 byte ceiling (1 MiB default; 64 MiB hard maximum), nesting depth (64 default; 256 hard maximum), and total JSON-item count (100,000 hard maximum). Output is subject to the same limits.
 5. The adapter is called in-process. Its output is subjected to the same JSON and size constraints.
 6. A structured result reports success or a non-sensitive error code and the policy decision identifier.
 
 ## Adapter requirements
 
-- IDs and capability names are stable, non-empty identifiers.
+- IDs and capability names are stable identifiers of 1–128 characters. Each adapter may declare at most 128 capabilities, and the registry may contain at most 10,000 adapters.
 - No implicit wildcard capability matching.
 - No automatic import, package installation, discovery, or execution of adapter code.
 - Adapters must not treat input as trusted, and must not return secrets in errors.
