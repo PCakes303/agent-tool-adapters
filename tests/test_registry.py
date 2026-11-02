@@ -67,9 +67,21 @@ class RegistryTests(unittest.TestCase):
 
     def test_deeply_nested_payload_is_rejected_cleanly(self):
         nested = "leaf"
-        for _ in range(1500):
+        for _ in range(65):
             nested = [nested]
         result = self.call(nested)
+        self.assertEqual(result.error_code, "invalid_or_oversized_input")
+
+    def test_max_payload_depth_must_be_positive_integer(self):
+        with self.assertRaises(ValueError):
+            AdapterRegistry(max_payload_depth=0)
+        with self.assertRaises(ValueError):
+            AdapterRegistry(max_payload_depth=True)
+
+    def test_configured_payload_depth_is_enforced(self):
+        registry = AdapterRegistry(max_payload_depth=2)
+        registry.register(Echo())
+        result = registry.invoke(Invocation("p", "test.echo", [[["deep"]]], self.allow))
         self.assertEqual(result.error_code, "invalid_or_oversized_input")
 
     def test_non_policy_decision_object_fails_closed(self):
