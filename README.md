@@ -60,4 +60,4 @@ No shell execution, arbitrary code loading, credentials storage, network client,
 python -m unittest discover -s tests -v
 ```
 
-Python 3.10–3.12 CI runs 27 unit tests, including descriptor-schema validation. Licensing remains pending portfolio-level review; no license is asserted.
+This repository applies a scoped mixed-license policy: original source code and machine-readable contracts are licensed under Apache-2.0; original human-readable documentation is licensed under CC BY 4.0. Third-party material retains upstream terms. Datasets, evidence, fixtures, sample payloads, media, and material with uncertain provenance are not blanket-licensed and require separate review. See [LICENSE.md](LICENSE.md).
