@@ -12,7 +12,7 @@ The registry trusts the host to authenticate the principal, register reviewed ad
 
 - **Unauthorized invocation:** every call requires a policy callback; missing, denying, or failing decisions deny invocation. This is only a local seam, not a production authorization service.
 - **Capability confusion:** exact capability identifiers are matched; no wildcard behavior is provided.
-- **Payload exhaustion:** JSON serialization and configurable byte limits bound input/output sizes. This does not bound CPU, memory, recursion during adapter execution, or execution time.
+- **Payload exhaustion:** Strict JSON data-model validation, configurable byte limits, and a configurable nesting-depth ceiling (64 by default) bound payload shape and size. This does not bound CPU, memory, recursion during adapter execution, or execution time.
 - **Adapter exceptions:** exceptions are converted to generic result codes rather than returned verbatim.
 - **Malicious adapter code:** not mitigated. Adapters execute in-process with host privileges.
 - **Identity spoofing:** not mitigated. Principal IDs are caller-provided values unless the host authenticates them.
