@@ -9,7 +9,7 @@ A small, dependency-free Python contract for exposing existing tools through con
 - Adapters are explicitly registered by a trusted application; no dynamic plugin discovery or code loading.
 - Every invocation supplies a principal, a declared capability, and a policy decision callback. Missing or denying policy fails closed.
 - Adapter identity and declared capabilities are metadata, not proof of identity, safety, or authorization.
-- Inputs and outputs are strictly validated against the JSON data model (string object keys only, no tuples, non-finite numbers or cycles) with configurable serialized byte ceilings.
+- Inputs and outputs are strictly validated against the JSON data model (string object keys only, no tuples, non-finite numbers or cycles) with configurable serialized byte ceilings and a default maximum nesting depth of 64.
 - Calls are synchronous and in-process. Timeouts, process isolation, network authentication, durable audit, and sandbox enforcement belong to upstream/downstream systems.
 
 ## Quick start
