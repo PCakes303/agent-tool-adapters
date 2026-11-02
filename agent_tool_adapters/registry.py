@@ -5,6 +5,7 @@ This is an in-process API seam, not a sandbox or authenticated enforcement point
 from __future__ import annotations
 import json
 import math
+import re
 from typing import Any, Protocol, runtime_checkable
 from .models import Invocation, InvocationResult, PolicyDecision
 
@@ -20,14 +21,31 @@ class ToolAdapter(Protocol):
     capabilities: frozenset[str]
     def invoke(self, input_data: Any) -> Any: ...
 
+_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+MAX_ADAPTERS = 10_000
+MAX_CAPABILITIES_PER_ADAPTER = 128
+MAX_PAYLOAD_BYTES = 64 * 1024 * 1024
+MAX_PAYLOAD_DEPTH = 256
+MAX_PAYLOAD_ITEMS = 100_000
+
+
 class AdapterRegistry:
-    def __init__(self, *, max_payload_bytes: int = 1_048_576, max_payload_depth: int = 64) -> None:
-        if not isinstance(max_payload_bytes, int) or isinstance(max_payload_bytes, bool) or max_payload_bytes < 1:
-            raise ValueError("max_payload_bytes must be a positive integer")
-        if not isinstance(max_payload_depth, int) or isinstance(max_payload_depth, bool) or max_payload_depth < 1:
-            raise ValueError("max_payload_depth must be a positive integer")
+    def __init__(
+        self,
+        *,
+        max_payload_bytes: int = 1_048_576,
+        max_payload_depth: int = 64,
+        max_payload_items: int = 100_000,
+    ) -> None:
+        if not isinstance(max_payload_bytes, int) or isinstance(max_payload_bytes, bool) or not 1 <= max_payload_bytes <= MAX_PAYLOAD_BYTES:
+            raise ValueError(f"max_payload_bytes must be an integer in [1, {MAX_PAYLOAD_BYTES}]")
+        if not isinstance(max_payload_depth, int) or isinstance(max_payload_depth, bool) or not 1 <= max_payload_depth <= MAX_PAYLOAD_DEPTH:
+            raise ValueError(f"max_payload_depth must be an integer in [1, {MAX_PAYLOAD_DEPTH}]")
+        if not isinstance(max_payload_items, int) or isinstance(max_payload_items, bool) or not 1 <= max_payload_items <= MAX_PAYLOAD_ITEMS:
+            raise ValueError(f"max_payload_items must be an integer in [1, {MAX_PAYLOAD_ITEMS}]")
         self._max_payload_bytes = max_payload_bytes
         self._max_payload_depth = max_payload_depth
+        self._max_payload_items = max_payload_items
         self._adapters: dict[str, ToolAdapter] = {}
         self._capabilities: dict[str, frozenset[str]] = {}
 
@@ -35,16 +53,18 @@ class AdapterRegistry:
         adapter_id = getattr(adapter, "adapter_id", None)
         capabilities = getattr(adapter, "capabilities", None)
         invoke = getattr(adapter, "invoke", None)
-        if not isinstance(adapter_id, str) or not adapter_id.strip():
-            raise AdapterProtocolError("adapter_id must be a non-empty string")
-        if not isinstance(capabilities, (set, frozenset)) or not capabilities:
-            raise AdapterProtocolError("capabilities must be a non-empty set")
-        if any(not isinstance(c, str) or not c.strip() for c in capabilities):
-            raise AdapterProtocolError("capabilities must contain non-empty strings")
+        if not isinstance(adapter_id, str) or not _IDENTIFIER.fullmatch(adapter_id):
+            raise AdapterProtocolError("adapter_id must be a bounded identifier")
+        if not isinstance(capabilities, (set, frozenset)) or not 1 <= len(capabilities) <= MAX_CAPABILITIES_PER_ADAPTER:
+            raise AdapterProtocolError(f"capabilities must be a set of 1..{MAX_CAPABILITIES_PER_ADAPTER} identifiers")
+        if any(not isinstance(c, str) or not _IDENTIFIER.fullmatch(c) for c in capabilities):
+            raise AdapterProtocolError("capabilities must contain bounded identifiers")
         if not callable(invoke):
             raise AdapterProtocolError("adapter must provide callable invoke(input_data)")
         if adapter_id in self._adapters:
             raise AdapterError(f"adapter already registered: {adapter_id}")
+        if len(self._adapters) >= MAX_ADAPTERS:
+            raise AdapterError("adapter registry capacity reached")
         normalized = frozenset(capabilities)
         collisions = {cap for cap in normalized
                       if any(cap in existing for existing in self._capabilities.values())}
@@ -58,10 +78,12 @@ class AdapterRegistry:
                 for key, value in sorted(self._adapters.items())]
 
     def invoke(self, invocation: Invocation) -> InvocationResult:
-        if not isinstance(invocation.principal_id, str) or not invocation.principal_id.strip():
-            return self._denied("unknown", invocation.capability, "invalid_principal")
-        if not isinstance(invocation.capability, str) or not invocation.capability.strip():
+        if not isinstance(invocation, Invocation):
+            return self._denied("unknown", "", "invalid_invocation")
+        if not isinstance(invocation.capability, str) or not _IDENTIFIER.fullmatch(invocation.capability):
             return self._denied("unknown", "", "invalid_capability")
+        if not isinstance(invocation.principal_id, str) or not _IDENTIFIER.fullmatch(invocation.principal_id):
+            return self._denied("unknown", invocation.capability, "invalid_principal")
         matches = [(key, adapter) for key, adapter in self._adapters.items()
                    if invocation.capability in self._capabilities[key]]
         if len(matches) != 1:
@@ -72,14 +94,18 @@ class AdapterRegistry:
             self._check_payload(invocation.input_data)
         except (TypeError, ValueError, OverflowError, RecursionError):
             return self._denied(adapter_id, invocation.capability, "invalid_or_oversized_input")
+        if not callable(invocation.policy):
+            return self._denied(adapter_id, invocation.capability, "policy_unavailable")
         try:
             decision = invocation.policy(invocation)
         except Exception:
             return self._denied(adapter_id, invocation.capability, "policy_error")
         if not isinstance(decision, PolicyDecision) or decision.allowed is not True:
-            decision_id = decision.decision_id if isinstance(decision, PolicyDecision) else None
+            decision_id = decision.decision_id if isinstance(decision, PolicyDecision) and isinstance(decision.decision_id, str) and _IDENTIFIER.fullmatch(decision.decision_id) else None
             return self._denied(adapter_id, invocation.capability, "policy_denied",
                                 decision_id)
+        if not isinstance(decision.decision_id, str) or not _IDENTIFIER.fullmatch(decision.decision_id):
+            return self._denied(adapter_id, invocation.capability, "invalid_policy_decision")
         try:
             output = adapter.invoke(invocation.input_data)
             self._check_payload(output)
@@ -97,8 +123,13 @@ class AdapterRegistry:
         # coercions), and reject cycles before serialization.
         active: set[int] = set()
         stack = [(value, False, 0)]
+        visited_items = 0
         while stack:
             item, exiting, depth = stack.pop()
+            if not exiting:
+                visited_items += 1
+                if visited_items + len(stack) > self._max_payload_items:
+                    raise ValueError("payload exceeds configured item limit")
             if isinstance(item, (dict, list)):
                 marker = id(item)
                 if exiting:
@@ -113,9 +144,12 @@ class AdapterRegistry:
                 if isinstance(item, dict):
                     if any(not isinstance(key, str) for key in item):
                         raise TypeError("JSON object keys must be strings")
-                    stack.extend((child, False, depth + 1) for child in item.values())
+                    children = list(item.values())
                 else:
-                    stack.extend((child, False, depth + 1) for child in item)
+                    children = item
+                if visited_items + len(stack) + len(children) > self._max_payload_items:
+                    raise ValueError("payload exceeds configured item limit")
+                stack.extend((child, False, depth + 1) for child in children)
             elif item is None or isinstance(item, (str, bool, int)):
                 continue
             elif isinstance(item, float):
