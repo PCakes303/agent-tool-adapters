@@ -48,7 +48,7 @@ This example demonstrates an injected policy seam only. It does not authenticate
 
 ## Ecosystem dependencies
 
-Declared prerequisites: AIX Core, Agent Transport Gateway, Agent Policy Engine, and Agent Sandbox Security. These are contract relationships only. The sandbox-security repository is planned and not yet implemented; no sandbox isolation is claimed. Runtime integration with any dependency remains untested.
+Declared prerequisites: AIX Core, Agent Transport Gateway, Agent Policy Engine, and Agent Sandbox Security. These are contract relationships only. The sandbox-security repository exists as an experimental contract scaffold; it does not currently provide OS isolation or workload execution. No sandbox isolation is claimed. Runtime integration with any dependency remains untested.
 
 ## Non-goals
 
