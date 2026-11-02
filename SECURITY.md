@@ -1,4 +1,4 @@
-# Security
+# Security Policy
 
 This repository is an experimental in-process adapter registry and policy-gating seam. It does not authenticate principals, enforce production authorization, isolate adapter code, limit execution time, or protect credentials.
 
@@ -9,4 +9,6 @@ This repository is an experimental in-process adapter registry and policy-gating
 - Treat all adapter inputs and outputs as untrusted data.
 - Do not place credentials, tokens, private data, or secrets in this repository.
 
-Report vulnerabilities through GitHub's private vulnerability reporting if enabled; otherwise contact the repository owner privately. Do not publish exploit details before coordinated remediation.
+## Vulnerability reporting
+
+Do not publish exploitable vulnerability details in public issues. Use GitHub private vulnerability reporting or a private security advisory only if enabled for this repository. No dedicated private reporting address is published here; if GitHub private reporting is unavailable, the owner must configure an approved private reporting channel before production use. Do not send credentials, tokens, or sensitive operational data through public channels.
