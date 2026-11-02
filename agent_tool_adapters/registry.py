@@ -124,12 +124,12 @@ class AdapterRegistry:
         active: set[int] = set()
         stack = [(value, False, 0)]
         visited_items = 0
+        pending_items = 1
         while stack:
             item, exiting, depth = stack.pop()
             if not exiting:
+                pending_items -= 1
                 visited_items += 1
-                if visited_items + len(stack) > self._max_payload_items:
-                    raise ValueError("payload exceeds configured item limit")
             if isinstance(item, (dict, list)):
                 marker = id(item)
                 if exiting:
@@ -140,15 +140,16 @@ class AdapterRegistry:
                 if depth >= self._max_payload_depth:
                     raise ValueError("payload exceeds maximum nesting depth")
                 active.add(marker)
-                stack.append((item, True, depth))
                 if isinstance(item, dict):
                     if any(not isinstance(key, str) for key in item):
                         raise TypeError("JSON object keys must be strings")
-                    children = list(item.values())
+                    children = item.values()
                 else:
                     children = item
-                if visited_items + len(stack) + len(children) > self._max_payload_items:
+                if visited_items + pending_items + len(item) > self._max_payload_items:
                     raise ValueError("payload exceeds configured item limit")
+                pending_items += len(item)
+                stack.append((item, True, depth))
                 stack.extend((child, False, depth + 1) for child in children)
             elif item is None or isinstance(item, (str, bool, int)):
                 continue
